@@ -1,0 +1,54 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:13.0-alpine
+    volumes:
+      - /var/lib/postgresql/data/
+    env_file:
+      - ./.env
+
+  service:
+    build: app
+    volumes:
+      - service_static_value:/var/html/static/
+      - service_media_value:/var/html/media/
+    expose:
+      - "8000"
+    env_file:
+      - ./.env
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/configs:/etc/nginx/conf.d:ro
+      - service_static_value:/var/html/static/
+      - service_media_value:/var/html/media/
+    depends_on:
+      - service
+    ports:
+      - "8000:80"
+
+  swagger:
+    image: swaggerapi/swagger-ui
+    volumes:
+      - ./data/openapi.yaml:/swagger.yaml
+    ports:
+      - "8080:8080"
+    environment:
+      - SWAGGER_JSON=/swagger.yaml
+
+  elastic:
+    image: elasticsearch:7.17.5
+    environment:
+      - discovery.type=single-node
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - elasticsearch_value:/usr/share/elasticsearch/data
+    expose:
+      - "9200"
+
+volumes:
+  service_static_value:
+  service_media_value:
+  elasticsearch_value:
