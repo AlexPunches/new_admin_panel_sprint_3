@@ -142,3 +142,9 @@ class PersonFilmwork(UUIDMixin):
 
     def __str__(self):
         return self.role
+
+
+class LastModifiedData(models.Model):
+    last_modified_movie = models.DateTimeField(null=True)
+    last_modified_genre = models.DateTimeField(null=True)
+    last_modified_person = models.DateTimeField(null=True)
