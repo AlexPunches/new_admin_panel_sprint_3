@@ -41,4 +41,4 @@ BUNCH_INSERT = int(os.environ.get('BUNCH_INSERT', 100))
 SQLITE3_PATH = os.environ.get('SQLITE3_PATH')
 ES_SCHEMAS_DIR = os.environ.get('ES_SCHEMAS_DIR')
 ES_BASE_URL = f"http://{os.environ.get('ES_HOST')}:{os.environ.get('ES_PORT', 9200)}"
-BUNCH_ES = int(os.environ.get('BUNCH_ES', 50))
+BUNCH_ES = int(os.environ.get('BUNCH_ES', 100))

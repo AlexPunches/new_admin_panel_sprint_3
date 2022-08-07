@@ -121,7 +121,6 @@ class Roles(models.TextChoices):
 
 
 class PersonFilmwork(UUIDMixin):
-
     film_work = models.ForeignKey(Filmwork, on_delete=models.CASCADE,
                                   verbose_name=_('filmwork'))
     person = models.ForeignKey(Person, on_delete=models.CASCADE,
@@ -144,7 +143,9 @@ class PersonFilmwork(UUIDMixin):
         return self.role
 
 
-class LastModifiedData(models.Model):
-    last_modified_movie = models.DateTimeField(null=True)
-    last_modified_genre = models.DateTimeField(null=True)
-    last_modified_person = models.DateTimeField(null=True)
+class ElasticWatcher(models.Model):
+    watcher = models.CharField(max_length=32, primary_key=True, null=False)
+    modified_at = models.DateTimeField(null=True)
+
+    class Meta:
+        db_table = "content\".\"elastic_watcher"

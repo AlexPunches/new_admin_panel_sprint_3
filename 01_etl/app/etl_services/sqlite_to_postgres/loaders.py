@@ -113,5 +113,5 @@ class PostgresSaver(DbConnect):
         """.format(table)
         self.cursor.execute(stmt)
         pk = self.cursor.fetchone()
-        if len(pk) > 0:
+        if pk and len(pk) > 0:
             return pk[0]

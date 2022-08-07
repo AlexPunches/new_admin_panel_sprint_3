@@ -15,7 +15,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 sys.path.append(BASE_DIR)
 from etl_services.postgres_to_es.loaders import PostgresLoader  # noqa: E402
 
-#
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -31,10 +30,18 @@ dsl = {
 def load_from_postgres(pg_connect: _connection):
     """Основной метод загрузки данных из Postgres в Elasticsearch."""
     postgres_loader = PostgresLoader(pg_connect)
-    data_for_save = postgres_loader.load_data()
-    for data in data_for_save:
-        print(postgres_loader.save_data(data))
-        sleep(1.5)
+    try:
+        count = 0
+        data_for_save = postgres_loader.load_movie_data()
+        for data in data_for_save:
+            saved = postgres_loader.save_data(data=data,
+                                              es_index_name='movies')
+            count += len(saved)
+            sleep(0.5)
+    except Exception:
+        raise ValueError
+    postgres_loader.watcher.finish()
+    logger.info(count)
 
 
 if __name__ == '__main__':
