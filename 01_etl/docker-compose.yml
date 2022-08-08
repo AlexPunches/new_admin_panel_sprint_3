@@ -10,8 +10,8 @@ services:
   service:
     build: app
     volumes:
-      - service_static_value:/var/html/static/
-      - service_media_value:/var/html/media/
+      - service_static_value:/opt/app/static/
+      - service_media_value:/opt/app/media/
     expose:
       - "8000"
     env_file:
@@ -47,6 +47,8 @@ services:
       - elasticsearch_value:/usr/share/elasticsearch/data
     expose:
       - "9200"
+    ports:
+      - "9200:9200"
 
 volumes:
   service_static_value:

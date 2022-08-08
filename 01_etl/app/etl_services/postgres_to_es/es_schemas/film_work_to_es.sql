@@ -54,10 +54,10 @@ LEFT JOIN content.person p ON p.id = pfw.person_id
 LEFT JOIN content.genre_film_work gfw ON gfw.film_work_id = fw.id
 LEFT JOIN content.genre g ON g.id = gfw.genre_id
 WHERE
-    fw.created_at > %s
+    fw.updated_at > %s
     OR
-    g.created_at > %s
+    g.updated_at > %s
     OR
-    p.created_at > %s
+    p.updated_at > %s
 GROUP BY fw.id
 ;

@@ -7,15 +7,12 @@ import requests
 
 from etl_services.postgres_to_es import DbConnect
 from etl_services.postgres_to_es.data_scheme import MovieEsModel
+from etl_services.postgres_to_es.services import ElasticInsertError
 from etl_services.postgres_to_es.watcher import Watcher
 from example import settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-
-class ElasticInsertError(Exception):
-    pass
 
 
 class PostgresLoader(DbConnect):
@@ -24,6 +21,7 @@ class PostgresLoader(DbConnect):
         self.watcher = Watcher(self.connection)
 
     def load_movie_data(self):
+        """Получить данные обновленных фильмов."""
         with open(f'{settings.ES_SCHEMAS_DIR}film_work_to_es.sql', 'r') as sql:
             stmt = sql.read()
         was_lasts = [
@@ -40,6 +38,7 @@ class PostgresLoader(DbConnect):
             yield fetched
 
     def save_data(self, data: list, es_index_name: str) -> list[UUID]:
+        """Записать данные в Elastic."""
         if len(data) < 1:
             return None
         headers = {'Content-Type': 'application/x-ndjson'}
@@ -47,10 +46,13 @@ class PostgresLoader(DbConnect):
         for item in data:
             bulk_items += self.make_es_item_for_bulk(item, es_index_name)
 
-        r = requests.put(f'{settings.ES_BASE_URL}/_bulk',
-                         headers=headers,
-                         data=bulk_items,
-                         )
+        try:
+            r = requests.put(f'{settings.ES_BASE_URL}/_bulk',
+                             headers=headers,
+                             data=bulk_items,
+                             )
+        except requests.exceptions.ConnectionError as e:
+            raise ElasticInsertError(e)
         if r.status_code == 200:
             return r.json().get('items')
         raise ElasticInsertError(r.json())
@@ -63,6 +65,3 @@ class PostgresLoader(DbConnect):
         movie_obj = MovieEsModel.parse_obj(row)
         es_item += movie_obj.json() + '\n'
         return es_item
-
-
-# отказоустойчивость, backoff

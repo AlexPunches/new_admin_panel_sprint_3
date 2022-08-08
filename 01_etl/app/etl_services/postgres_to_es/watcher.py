@@ -4,6 +4,7 @@ from etl_services.postgres_to_es import DbConnect
 
 
 class Watcher(DbConnect):
+    """Класс сохранения и получения состояния индексации Elastic's."""
     FILM_WORK = 'film_work'
     GENRE = 'genre'
     PERSON = 'person'

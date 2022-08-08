@@ -16,4 +16,5 @@ logs:
 	docker-compose -f 01_etl/docker-compose.yml logs -f
 add-es-schemas:
 	docker-compose -f 01_etl/docker-compose.yml exec service python etl_services/postgres_to_es/add_es_schemas.py
-# load-es-movies:
+load-es-movies:
+	docker-compose -f 01_etl/docker-compose.yml exec service python etl_services/postgres_to_es/load_indexes.py
