@@ -10,7 +10,6 @@ from dotenv import load_dotenv
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_DIR)
-etl_module_dir = os.path.join(BASE_DIR, 'sqlite_to_postgres')
 
 load_dotenv('config/.env')
 

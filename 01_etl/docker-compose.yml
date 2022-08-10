@@ -4,6 +4,8 @@ services:
     image: postgres:13.0-alpine
     volumes:
       - /var/lib/postgresql/data/
+    ports:
+      - "5432:5432"
     env_file:
       - ./.env
 
@@ -49,6 +51,17 @@ services:
       - "9200"
     ports:
       - "9200:9200"
+    depends_on:
+      - postgres
+
+  etl:
+    build: etl_services
+    volumes:
+      - ./etl_services:/opt/app:ro
+    env_file:
+      - ./.env
+    depends_on:
+      - elastic
 
 volumes:
   service_static_value:

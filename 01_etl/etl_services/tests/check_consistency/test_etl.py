@@ -1,6 +1,6 @@
 import pytest
 
-from etl_services.sqlite_to_postgres.data_classes import DATACLASSES_MAP
+from sqlite_to_postgres.data_classes import DATACLASSES_MAP
 
 
 @pytest.mark.parametrize(

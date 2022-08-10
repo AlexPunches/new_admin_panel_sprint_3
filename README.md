@@ -19,7 +19,6 @@ make load-data
 
 Запустить ETL из Postgres в Elasticsearch
 ```bash
-make add-es-schemas
 make load-es-movies
 ```
 

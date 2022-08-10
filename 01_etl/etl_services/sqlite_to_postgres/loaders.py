@@ -1,13 +1,9 @@
-import logging
 import more_itertools
 import psycopg2
 import sqlite3
 
-from etl_services.sqlite_to_postgres.data_classes import DATACLASSES_MAP
-from example import settings
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from sqlite_to_postgres import logger, settings
+from sqlite_to_postgres.data_classes import DATACLASSES_MAP
 
 
 class LoadDataError(Exception):
@@ -28,7 +24,7 @@ class SQLiteLoader(DbConnect):
     table: str | None
     last_id: str | None = None
 
-    def load_data(self, table) -> list:
+    def load_data(self, table: str) -> list:
         self.table = table
         raw_data = self.load_data_from_table()
         for rows in raw_data:
@@ -40,12 +36,12 @@ class SQLiteLoader(DbConnect):
         self.cursor.execute(stmt)
 
         while True:
-            fetched = self.cursor.fetchmany(settings.BUNCH_EXTRACT)
+            fetched = self.cursor.fetchmany(settings.bunch_extract)
             if len(fetched) < 1:
                 return None
             yield fetched
 
-    def transform_data(self, data: list[sqlite3.Row]):
+    def transform_data(self, data: list[sqlite3.Row]) -> list:
         """Сделать список объектов датакласса."""
         dt_class = DATACLASSES_MAP.get(self.table)
         if dt_class is None:
@@ -53,7 +49,7 @@ class SQLiteLoader(DbConnect):
                                 'Need a dataclass.'.format(self.table))
         return [dt_class(**row) for row in data]
 
-    def get_tables(self, name_table: str | None = None) -> list:
+    def get_tables(self, name_table: str | None = None) -> list[str]:
         """Получить список таблиц, из которых берем данные."""
         substitute = []
         stmt = "SELECT name FROM sqlite_master WHERE type='table' "
@@ -69,7 +65,7 @@ class SQLiteLoader(DbConnect):
 
 
 class PostgresSaver(DbConnect):
-    def save_data(self, data, table):
+    def save_data(self, data, table) -> None:
         dt_class = DATACLASSES_MAP.get(table)
         if dt_class is None:
             raise LoadDataError('Warning: unknown table <{}>. '
@@ -90,7 +86,7 @@ class PostgresSaver(DbConnect):
 
         try:
             for data_chunk in more_itertools.ichunked(data,
-                                                      settings.BUNCH_INSERT):
+                                                      settings.bunch_insert):
                 data = [row.as_tuple for row in data_chunk]
                 self.cursor.executemany(stmt, data)
                 self.connection.commit()
