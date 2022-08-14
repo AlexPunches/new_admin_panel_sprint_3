@@ -31,7 +31,7 @@ def load_from_postgres(pg_connect: _connection) -> None:
     """Основной метод загрузки данных из Postgres в Elasticsearch."""
     pg_extracter = PostgresExtracter(pg_connect)
     data_for_save = pg_extracter.extract_movie_data()
-    loaded_count = ElasticLoader().save_data(data=data_for_save,
+    loaded_count = ElasticLoader.save_data(data=data_for_save,
                                              es_index_name='movies')
     logger.info("Проиндексировано %s фильмов.", loaded_count)
     # todo: передать ответственность на класс про Watcher

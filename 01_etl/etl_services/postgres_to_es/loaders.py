@@ -39,7 +39,8 @@ class PostgresExtracter(DbConnect):
 
 
 class ElasticLoader:
-    def save_data(self,
+    @classmethod
+    def save_data(cls,
                   data: Generator[DictRow, None, None],
                   es_index_name: str,
                   ) -> int:
@@ -48,7 +49,7 @@ class ElasticLoader:
         headers = {'Content-Type': 'application/x-ndjson'}
         for items in more_itertools.ichunked(data, settings.bunch_es_load):
             bulk_items = ''.join([
-                self._make_es_item_for_bulk(item, es_index_name)
+                cls._make_es_item_for_bulk(item, es_index_name)
                 for item in items
             ])
 
