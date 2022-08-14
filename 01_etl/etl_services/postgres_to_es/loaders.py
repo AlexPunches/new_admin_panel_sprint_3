@@ -17,7 +17,7 @@ from postgres_to_es.sqls.film_work_2_es_sql import film_work_2_es as fw2es
 class PostgresExtracter(DbConnect):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.set_watcher()
+        self.es_state = self.create_es_state()
 
     def extract_movie_data(self) -> Generator[DictRow, None, None]:
         """Получить данные обновленных фильмов."""
@@ -31,9 +31,9 @@ class PostgresExtracter(DbConnect):
         while fetched := self.cursor.fetchmany(settings.bunch_extract):
             yield from fetched
 
-    def set_watcher(self):
+    def create_es_state(self):
         try:
-            self.es_state = ElasticIndexState(self.connection)
+            return ElasticIndexState(self.connection)
         except Exception as e:
             raise ElasticIndexStateError() from e
 
