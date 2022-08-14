@@ -1,5 +1,4 @@
-from pydantic import (BaseModel, BaseSettings, DirectoryPath, Field, FilePath,
-                      HttpUrl)
+from pydantic import BaseSettings, DirectoryPath, Field, FilePath
 
 
 class Dsl(BaseSettings):
@@ -21,7 +20,7 @@ class EsBaseUrl(BaseSettings):
 class BaseConfig(BaseSettings):
     bunch_extract: int = 100
     bunch_insert: int = 100
-    bunch_es: int = 100
+    bunch_es_load: int = 100
     sqlite3_path: FilePath = Field(..., env='sqlite3_path')
     es_schemas_dir: DirectoryPath = Field(..., env='es_schemas_dir')
     es_base_url: str = EsBaseUrl().get_url()

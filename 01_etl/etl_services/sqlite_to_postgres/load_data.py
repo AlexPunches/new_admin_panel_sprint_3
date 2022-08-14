@@ -48,8 +48,8 @@ def load_from_sqlite(
         except LoadDataError as e:
             logger.warning(e)
         else:
-            logger.info("Table <{}> finished. "
-                        "Processed {} rows.".format(table, count))
+            logger.info("Table <%s> finished. "
+                        "Processed %s rows.", table, count)
 
 
 if __name__ == '__main__':

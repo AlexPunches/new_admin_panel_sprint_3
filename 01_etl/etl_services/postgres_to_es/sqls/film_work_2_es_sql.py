@@ -1,4 +1,4 @@
-SELECT
+film_work_2_es = """SELECT
     fw.id,
     fw.title,
     fw.description,
@@ -61,3 +61,4 @@ WHERE
     p.updated_at > %s
 GROUP BY fw.id
 ;
+"""

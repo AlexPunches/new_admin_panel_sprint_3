@@ -3,7 +3,7 @@ from time import sleep
 
 
 class ElasticInsertError(Exception):
-    pass
+    ...
 
 
 def backoff(
