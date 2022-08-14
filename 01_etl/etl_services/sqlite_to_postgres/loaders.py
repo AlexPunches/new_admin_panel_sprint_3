@@ -7,11 +7,11 @@ from sqlite_to_postgres.data_classes import DATACLASSES_MAP
 
 
 class LoadDataError(Exception):
-    pass
+    ...
 
 
 class ForeignKeyError(Exception):
-    pass
+    ...
 
 
 class DbConnect:

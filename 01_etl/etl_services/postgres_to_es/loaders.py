@@ -1,60 +1,74 @@
 import json
-from datetime import datetime
+import more_itertools
 from psycopg2.extras import DictRow
-from uuid import UUID
+from typing import Generator
 
 import requests
 
 from postgres_to_es import DbConnect, settings
 from postgres_to_es.data_scheme import MovieEsModel
+from postgres_to_es.elastic_index_state import (ElasticIndexState,
+                                                ElasticIndexStateError,
+                                                Tracked)
 from postgres_to_es.services import ElasticInsertError
-from postgres_to_es.watcher import Watcher, WatcherError
+from postgres_to_es.sqls.film_work_2_es_sql import film_work_2_es as fw2es
 
 
-class PostgresLoader(DbConnect):
+class PostgresExtracter(DbConnect):
     def __init__(self, *args, **kwargs):
-        super(PostgresLoader, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.set_watcher()
 
-    def load_movie_data(self) -> list[DictRow]:
+    def extract_movie_data(self) -> Generator[DictRow, None, None]:
         """Получить данные обновленных фильмов."""
-        with open(f'{settings.es_schemas_dir}/film_work_2_es.sql', 'r') as sql:
-            stmt = sql.read()
         was_lasts = [
-            self.watcher.were_lasts['film_work'] or datetime.fromtimestamp(0),
-            self.watcher.were_lasts['genre'] or datetime.fromtimestamp(0),
-            self.watcher.were_lasts['person'] or datetime.fromtimestamp(0),
+            self.es_state.were_lasts[Tracked.FILM_WORK],
+            self.es_state.were_lasts[Tracked.GENRE],
+            self.es_state.were_lasts[Tracked.PERSON],
         ]
-        self.cursor.execute(stmt, was_lasts)
+        self.cursor.execute(fw2es, was_lasts)
 
-        while fetched := self.cursor.fetchmany(settings.bunch_es):
-            yield fetched
+        while fetched := self.cursor.fetchmany(settings.bunch_extract):
+            yield from fetched
 
-    def save_data(self,
-                  data: list[DictRow],
-                  es_index_name: str,
-                  ) -> list[UUID] | None:
-        """Записать данные в Elastic."""
-        if len(data) < 1:
-            return None
-        headers = {'Content-Type': 'application/x-ndjson'}
-        bulk_items = ''
-        for item in data:
-            bulk_items += self.make_es_item_for_bulk(item, es_index_name)
-
+    def set_watcher(self):
         try:
-            r = requests.put(f'{settings.es_base_url}/_bulk',
-                             headers=headers,
-                             data=bulk_items,
-                             )
-        except requests.exceptions.ConnectionError as e:
-            raise ElasticInsertError(e)
-        if r.status_code == 200:
-            return [movie['index']['_id'] for movie in r.json().get('items')]
-        raise ElasticInsertError(r.json())
+            self.es_state = ElasticIndexState(self.connection)
+        except Exception as e:
+            raise ElasticIndexStateError() from e
+
+
+class ElasticLoader:
+    def save_data(self,
+                  data: Generator[DictRow, None, None],
+                  es_index_name: str,
+                  ) -> int:
+        """Записать данные в Elastic."""
+        count = 0
+        headers = {'Content-Type': 'application/x-ndjson'}
+        for items in more_itertools.ichunked(data, settings.bunch_es_load):
+            bulk_items = ''.join([
+                self._make_es_item_for_bulk(item, es_index_name)
+                for item in items
+            ])
+
+            try:
+                r = requests.put(f'{settings.es_base_url}/_bulk',
+                                 headers=headers,
+                                 data=bulk_items,
+                                 )
+            except requests.exceptions.ConnectionError as e:
+                raise ElasticInsertError() from e
+            if r.status_code == 200:
+                if r.json().get('items') is not None:
+                    count += len(r.json().get('items'))
+            else:
+                raise ElasticInsertError("Can't insert data into Elastic. "
+                                         "Status_code: %s ", r.status_code)
+        return count
 
     @staticmethod
-    def make_es_item_for_bulk(row: DictRow, es_index_name: str) -> str:
+    def _make_es_item_for_bulk(row: DictRow, es_index_name: str) -> str:
         """
         Сделать пару строк[json-объектов] для Bulk-запроса в Elasticsearch
         :param row: DictRow из постгреса
@@ -73,9 +87,3 @@ class PostgresLoader(DbConnect):
         movie_obj = MovieEsModel.parse_obj(row)
         es_item += movie_obj.json() + '\n'
         return es_item
-
-    def set_watcher(self):
-        try:
-            self.watcher = Watcher(self.connection)
-        except Exception as e:
-            raise WatcherError(e)
